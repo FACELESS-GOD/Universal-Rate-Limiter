@@ -4,12 +4,14 @@ import (
 	Configurator "Universal-Rate-Limiter/src/BaseConfig"
 	RateConfigurator "Universal-Rate-Limiter/src/ConfigReader"
 	"errors"
+
+	// "fmt"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
-
-	"gopkg.in/yaml.v3"
+	// "time"
+	// "gopkg.in/yaml.v3"
 )
 
 type YamlParser struct {
@@ -60,8 +62,16 @@ func (Par *YamlParser) ReadFile(StruPtr *RateConfigurator.RateLimiterConfigurati
 			return true, errors.New("Error occured while opening the file. Error: " + err.Error())
 		}
 
-		err = yaml.Unmarshal(yamlData, StruPtr)
-		isAnyError, err := Par.unmarshal(yamlData, StruPtr)
+		isAnyError := false
+		// start := time.Now()
+		// err = yaml.Unmarshal(yamlData, StruPtr)
+		err = Par.unmarshal(yamlData, StruPtr)
+		if err != nil {
+			isAnyError = true
+		}
+
+		// duration := time.Since(start)
+		// fmt.Println("Took:", duration)
 		if isAnyError == true || err != nil {
 			return true, errors.New("Error occured while reading the file. Error: " + err.Error())
 		}
@@ -75,7 +85,7 @@ func (Par *YamlParser) ReadFile(StruPtr *RateConfigurator.RateLimiterConfigurati
 	Unmarshal() :	This is custom unmarshaler which will unmarshal the yaml files.
 */
 
-func (Par *YamlParser) unmarshal(data []byte, store *RateConfigurator.RateLimiterConfiguration) (bool, error) {
+func (Par *YamlParser) unmarshal(data []byte, store *RateConfigurator.RateLimiterConfiguration) error {
 	lineBytes := [][]byte{}
 	temp := []byte{}
 	var newlineByte byte = '\n'
@@ -89,98 +99,98 @@ func (Par *YamlParser) unmarshal(data []byte, store *RateConfigurator.RateLimite
 			temp = append(temp, curr)
 		}
 	}
-	isAnyError, err := Par.rateLimiterConfigurationParser(lineBytes, store)
-	if isAnyError == true || err != nil {
-		return isAnyError, err
+	lineBytes = append(lineBytes, temp)
+	err := Par.rateLimiterConfigurationParser(lineBytes, store)
+	if err != nil {
+		return err
 	}
-	return false, err
+	return err
 }
 
 /*
 	rateLimiterConfigurationParser() :	This function will parse the [][]byte and return RateLimiterConfiguration
 */
 
-func (Par *YamlParser) rateLimiterConfigurationParser(data [][]byte, store *RateConfigurator.RateLimiterConfiguration) (bool, error) {
+func (Par *YamlParser) rateLimiterConfigurationParser(data [][]byte, store *RateConfigurator.RateLimiterConfiguration) error {
 
-	isAnyError, err, uniVal := Par.stringParser(data[0])
-	if isAnyError == true || err != nil {
-		return isAnyError, err
+	err, uniVal := Par.stringParser(data[0])
+	if err != nil {
+		return err
 	}
 	store.Domain = uniVal
 
 	descriptors := []RateConfigurator.Descriptor{}
-	for i := 2; i < len(data)-5; i = i + 7 {
+	for i := 2; i < len(data)-4; i = i + 7 {
 		descriptor := RateConfigurator.Descriptor{}
-		descriptorData := data[(i-1):(i + 6)]
-		isAnyError, err := Par.descriptorParser(descriptorData, &descriptor)
-		if isAnyError == true || err != nil {
+		descriptorData := data[(i):(i + 6)]
+		err := Par.descriptorParser(descriptorData, &descriptor)
+		if err != nil {
 			store.Descriptors = descriptors
-			return isAnyError, err
+			return err
 		}
 		descriptors = append(descriptors, descriptor)
 	}
 	store.Descriptors = descriptors
-	return false, nil
+	return nil
 }
 
 /*
-	descriptorParser() :	This function will parse the [][]byte and return Descriptor
+descriptorParser() :	This function will parse the [][]byte and return Descriptor
 */
-func (Par *YamlParser) descriptorParser(data [][]byte, store *RateConfigurator.Descriptor) (bool, error) {
+func (Par *YamlParser) descriptorParser(data [][]byte, store *RateConfigurator.Descriptor) error {
 	// Key
-	isAnyError, err, uniVal := Par.stringParser(data[0])
-	if isAnyError == true || err != nil {
-		return isAnyError, err
+	err, uniVal := Par.stringParser(data[0])
+	if err != nil {
+		return err
 	}
 	store.Key = uniVal
 
 	// algorithm
-	isAnyError, err, uniVal = Par.stringParser(data[1])
-	if isAnyError == true || err != nil {
-		return isAnyError, err
+	err, uniVal = Par.stringParser(data[1])
+	if err != nil {
+		return err
 	}
 	store.Algorithm = uniVal
 
 	// Value
-	isAnyError, err, uniVal = Par.stringParser(data[2])
-	if isAnyError == true || err != nil {
-		return isAnyError, err
+	err, uniVal = Par.stringParser(data[2])
+	if err != nil {
+		return err
 	}
 	store.Value = uniVal
 
 	// Rate Limit
 	rateLimit := RateConfigurator.RateLimit{}
-	isAnyError, err = Par.rateLimitParser(data[3:5], &rateLimit)
-	if isAnyError == true || err != nil {
-		return isAnyError, err
+	err = Par.rateLimitParser(data[4:6], &rateLimit)
+	if err != nil {
+		return err
 	}
 	store.Rate_Limit = rateLimit
-	return false, nil
+	return nil
 }
 
 /*
-	rateLimitParser() :	This function will parse the [][]byte and return RateLimit
+rateLimitParser() :	This function will parse the [][]byte and return RateLimit
 */
-func (Par *YamlParser) rateLimitParser(data [][]byte, store *RateConfigurator.RateLimit) (bool, error) {
-	isAnyError, err, uniVal := Par.stringParser(data[0])
-	if isAnyError == true || err != nil {
-		return isAnyError, err
+func (Par *YamlParser) rateLimitParser(data [][]byte, store *RateConfigurator.RateLimit) error {
+	err, uniVal := Par.stringParser(data[0])
+	if err != nil {
+		return err
 	}
 	store.Unit = uniVal
 
-	isAnyError, err, Val := Par.int64Parser(data[1])
-	if isAnyError == true || err != nil {
-		return isAnyError, err
+	err, Val := Par.int64Parser(data[1])
+	if err != nil {
+		return err
 	}
 	store.RequestsPerUnit = Val
-	return false, nil
+	return nil
 }
 
-
 /*
-	stringParser() :	This function will parse the [][]byte and return string
+stringParser() :	This function will parse the [][]byte and return string
 */
-func (Par *YamlParser) stringParser(data []byte) (bool, error, string) {
+func (Par *YamlParser) stringParser(data []byte) (error, string) {
 	var spaceByte byte = ' '    // Standard space (ASCII 32)
 	var tabByte byte = '\t'     // Horizontal tab (ASCII 9)
 	var newlineByte byte = '\n' // Newline / Line feed (ASCII 10)
@@ -205,13 +215,13 @@ func (Par *YamlParser) stringParser(data []byte) (bool, error, string) {
 			}
 		}
 	}
-	return false, nil, string(temp)
+	return nil, string(temp)
 }
 
 /*
-	stringParser() :	This function will parse the [][]byte and return int64
+stringParser() :	This function will parse the [][]byte and return int64
 */
-func (Par *YamlParser) int64Parser(data []byte) (bool, error, int64) {
+func (Par *YamlParser) int64Parser(data []byte) (error, int64) {
 	var spaceByte byte = ' '    // Standard space (ASCII 32)
 	var tabByte byte = '\t'     // Horizontal tab (ASCII 9)
 	var newlineByte byte = '\n' // Newline / Line feed (ASCII 10)
@@ -239,7 +249,7 @@ func (Par *YamlParser) int64Parser(data []byte) (bool, error, int64) {
 	str := string(temp)
 	num, err := strconv.ParseInt(str, 10, 64)
 	if err != nil {
-		return true, err, 0
+		return err, 0
 	}
-	return false, nil, num
+	return nil, num
 }

@@ -1,0 +1,8 @@
+domain: Test
+descriptors:
+  - key: message_type
+    algorithm: TokenBucket
+    value: marketing
+    rate_limit:
+      unit: day
+      requests_per_unit: 10
